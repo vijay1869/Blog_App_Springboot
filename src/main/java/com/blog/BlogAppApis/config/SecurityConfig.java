@@ -1,14 +1,21 @@
 package com.blog.BlogAppApis.config;
 
 import com.blog.BlogAppApis.security.CustomUserDetailService;
+import com.blog.BlogAppApis.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 //most of the things happening are in this file -related to secutiry
 //authentication
@@ -21,6 +28,12 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
     @Autowired
     private CustomUserDetailService customUserDetailsService;
+
+    @Autowired
+    private AuthenticationEntryPoint authenticationEntryPoint;
+
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
 
 //    @Autowired
 //    private AuthEntryPointJwt unauthorizedHandler;
@@ -36,7 +49,12 @@ public class SecurityConfig {
                 anyRequest().
                 authenticated().
                 and().
-                httpBasic();
+                exceptionHandling().authenticationEntryPoint(this.authenticationEntryPoint).
+        and().
+        sessionManagement().
+        sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+        http.addFilterBefore(this.jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -52,8 +70,18 @@ public class SecurityConfig {
    }
     @Bean
     public PasswordEncoder passwordEncoder() {
+
         return new BCryptPasswordEncoder();
     }
+
+//    public AuthenticationManager authenticationManagerBean() throws Exception{
+//        return super.authenticationManagerBean();
+//    }
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfiguration) throws Exception {
+        return authConfiguration.getAuthenticationManager();
+    }
+
 
 
 
